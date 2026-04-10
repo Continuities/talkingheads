@@ -11,5 +11,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "node index.ts"
+  },
+  "dependencies": {
+    "node-mic": "^1.0.1"
   }
 }
