@@ -21,3 +21,14 @@ export function lerp(a: number, b: number, t: number): number {
   const clamped = Math.min(1, Math.max(0, t));
   return a + clamped * (b - a);
 }
+
+export const smoothed = (smoothFactor: number, initial = 0) => {
+  let value = initial;
+  return {
+    value: () => value,
+    update: (newValue: number) => {
+      value = smoothFactor * value + (1 - smoothFactor) * newValue;
+      return value;
+    },
+  };
+};
