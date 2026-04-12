@@ -1,5 +1,5 @@
 import Mic from "node-mic";
-import pkg from "ring-buffer-ts";
+import RingBufferTS from "ring-buffer-ts";
 import Silero from "./silero.ts";
 import { smoothed } from "./util.ts";
 import { draw } from "./console.ts";
@@ -10,6 +10,7 @@ const BUFFER_SIZE = WINDOW_SIZE * 4; // in samples, not bytes
 const BITRATE = 16000;
 const BITWIDTH = 16;
 const BYTES_PER_SAMPLE = BITWIDTH / 8;
+const INT16_MAX_MAGNITUDE = 2 ** 15; // 32768
 const PROCESSING_INTERVAL_MS = 50;
 const RMS_SMOOTHING = 0.3; // [0, 1] higher = smoother, but more lag; 0 = no smoothing, more jitter
 const SPEECH_PROB_THRESHOLD = 0.75; // [0, 1] threshold for speech detection
@@ -31,12 +32,12 @@ const mic = new Mic({
   encoding: "signed-integer",
 });
 const micStream = mic.getAudioStream();
-const audioBuffer = new pkg.RingBuffer<number>(BUFFER_SIZE);
+const audioBuffer = new RingBufferTS.RingBuffer<number>(BUFFER_SIZE);
 
 micStream.on("data", (chunk: Buffer) => {
   const incoming = new Float32Array(chunk.length / BYTES_PER_SAMPLE);
   for (let i = 0; i < incoming.length; i++) {
-    incoming[i] = chunk.readInt16LE(i * BYTES_PER_SAMPLE) / 32768;
+    incoming[i] = chunk.readInt16LE(i * BYTES_PER_SAMPLE) / INT16_MAX_MAGNITUDE;
   }
   audioBuffer.add(...incoming);
 });
