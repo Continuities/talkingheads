@@ -1,44 +1,27 @@
 import TerminalKit from "terminal-kit";
-const term = TerminalKit.terminal;
+import { type HeadInfo } from "./head.ts";
 
-interface ConsoleData {
-  speaking: boolean;
-  speechProb: number;
-  rms: number;
-  smoothedRms: number;
-  flux: number;
-  solenoidOpen: boolean;
-}
+const term = TerminalKit.terminal;
 
 term.clear();
 
-export const draw = ({
-  speaking,
-  speechProb,
-  rms,
-  smoothedRms,
-  flux,
-  solenoidOpen,
-}: ConsoleData) => {
+export const draw = (heads: HeadInfo[]) => {
+  const rows = heads.map((h, i) => [
+    `${i + 1}`,
+    h.solenoidOpen ? "^#^r    ^:" : "    ",
+    h.speechProb.toFixed(3),
+    h.rms.toFixed(3),
+    h.smoothedRms.toFixed(3),
+    h.flux.toFixed(3),
+  ]);
   term.moveTo(0, 0);
   term.table(
-    [
-      ["POOF", "P(speech)", "RMS", "Smoothed RMS", "Flux"],
-      [
-        "",
-        speechProb.toFixed(3),
-        rms.toFixed(3),
-        smoothedRms.toFixed(3),
-        flux.toFixed(3),
-      ],
-    ],
+    [["Head", "POOF", "P(speech)", "RMS", "Smoothed RMS", "Flux"], ...rows],
     {
       hasBorder: true,
-      contentHasMarkup: false,
+      contentHasMarkup: true,
       width: 80,
       fit: true,
-      firstRowTextAttr: { bgColor: "default" },
-      firstColumnTextAttr: { bgColor: solenoidOpen ? "red" : "default" },
     }
   );
 };
