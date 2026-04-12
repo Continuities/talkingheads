@@ -1,13 +1,20 @@
 import ort from "onnxruntime-node";
+import { lerp } from "./util.ts";
 
 const WINDOW_SIZE = 512;
 const HOP_SIZE = 256;
 const BYTES_PER_SAMPLE = 2;
 
+const ONSET_THRESHOLD = 0.1; // tune this
+const MIN_ONSET_GAP_MS = 150; // minimum ms between onsets
+const SMOOTH = 0.15; // smoothing factor for energy envelope
+
 export default async (sampleRate: number) => {
   let session: ort.InferenceSession;
   let h: ort.Tensor;
   let c: ort.Tensor;
+  let smoothedRms: number = 0;
+  let lastOnsetTime: number = 0;
 
   async function init() {
     session = await ort.InferenceSession.create("./silero_vad_4.onnx");
@@ -37,6 +44,25 @@ export default async (sampleRate: number) => {
     c = result.cn;
 
     return result.output.data[0] as number; // speech probability 0.0 – 1.0
+  }
+
+  function detectOnset(float32: Float32Array): boolean {
+    const rms = Math.sqrt(
+      float32.reduce((s, x) => s + x * x, 0) / float32.length
+    );
+
+    // How much did energy just jump?
+    const flux = Math.max(0, rms - smoothedRms); // only care about increases
+    smoothedRms = SMOOTH * smoothedRms + (1 - SMOOTH) * rms;
+
+    const now = Date.now();
+    const gapOk = now - lastOnsetTime > MIN_ONSET_GAP_MS;
+
+    if (flux > ONSET_THRESHOLD && gapOk) {
+      lastOnsetTime = now;
+      return true;
+    }
+    return false;
   }
 
   await init();
@@ -70,12 +96,13 @@ export default async (sampleRate: number) => {
         );
 
         const probability = await detectSpeech(new Float32Array(ringBuffer));
-        const isSpeech = probability > 0.5;
-        console.log(
-          `P(speech): ${probability.toFixed(3)} — ${
-            isSpeech ? "SPEECH" : "silence"
-          }`
-        );
+        const isSpeech = probability > 0.75;
+        const isOnset = detectOnset(ringBuffer);
+
+        if (isSpeech && isOnset) {
+          const duration = Math.floor(lerp(50, 300, smoothedRms / 0.3));
+          console.log("poof ", duration);
+        }
 
         // Retain second half for next window
         ringBuffer.copyWithin(0, HOP_SIZE);

@@ -16,3 +16,8 @@ export function calculateRMS(buffer: Buffer): number {
 
   return Math.sqrt(sumOfSquares / samples);
 }
+
+export function lerp(a: number, b: number, t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return a + clamped * (b - a);
+}
