@@ -5,7 +5,7 @@ const term = TerminalKit.terminal;
 
 term.clear();
 
-export const draw = (heads: HeadInfo[]) => {
+export const draw = (heads: HeadInfo[], serialLog: string[]) => {
   const rows = heads.map((h, i) => [
     `${i + 1}`,
     h.solenoidOpen ? "^#^r    ^:" : "    ",
@@ -22,6 +22,7 @@ export const draw = (heads: HeadInfo[]) => {
       contentHasMarkup: true,
       width: 80,
       fit: true,
-    }
+    },
   );
+  term.table([["Serial log"], [serialLog.join("\n")]]);
 };

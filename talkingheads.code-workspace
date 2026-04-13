@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "solenoid-controller",
+			"path": "solenoid-controller"
+		}
+	],
+	"settings": {}
+}

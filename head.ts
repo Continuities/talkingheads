@@ -19,6 +19,7 @@ interface HeadConfig {
   onsetThreshold: number; // rms delta for syllable detection. Tune to the mic.
   minOnsetGapMs: number; // minimum ms between onsets
   fluxScale: number; // how much flux (rms increase) maps to max strength
+  setSolenoid: (open: boolean) => void; // callback for opening/closing a solenoid
 }
 
 export interface HeadInfo {
@@ -37,12 +38,14 @@ export default async ({
   onsetThreshold,
   minOnsetGapMs,
   fluxScale,
+  setSolenoid,
 }: HeadConfig) => {
   const detectSpeech = await Silero(BITRATE);
   const smoothedRMS = smoothed(rmsSmoothing, 0);
   const solenoid = Solenoid({
     minTriggerDelayMs: minOnsetGapMs,
     maxOpenDurationMs: 500,
+    onChange: setSolenoid,
   });
   const mic = new Mic({
     rate: BITRATE,
@@ -79,7 +82,7 @@ export default async ({
       const frame = new Float32Array(audioBuffer.getFirstN(WINDOW_SIZE));
       audioBuffer.remove(0, WINDOW_SIZE);
       const rms = Math.sqrt(
-        frame.reduce((s, x) => s + x * x, 0) / frame.length
+        frame.reduce((s, x) => s + x * x, 0) / frame.length,
       );
       const flux = Math.max(0, rms - smoothedRMS.value()); // only care about increases
       const onsetTriggered = flux > onsetThreshold;

@@ -1,9 +1,14 @@
 interface SolenoidConfig {
   minTriggerDelayMs: number; // minimum time between triggers to avoid overheating
   maxOpenDurationMs: number; // how long to open the solenoid for, at max strength
+  onChange: (open: boolean) => void; // callback for when the solenoid changes state
 }
 
-export default ({ minTriggerDelayMs, maxOpenDurationMs }: SolenoidConfig) => {
+export default ({
+  minTriggerDelayMs,
+  maxOpenDurationMs,
+  onChange,
+}: SolenoidConfig) => {
   let lastTrigger = 0;
   let isOpen = false;
   return {
@@ -21,9 +26,11 @@ export default ({ minTriggerDelayMs, maxOpenDurationMs }: SolenoidConfig) => {
       }
       const duration = strength * maxOpenDurationMs;
       isOpen = true;
+      onChange(true);
       lastTrigger = now;
       setTimeout(() => {
         isOpen = false;
+        onChange(false);
       }, duration);
     },
     isOpen: () => isOpen,
