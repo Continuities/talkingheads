@@ -12,7 +12,7 @@ const BYTES_PER_SAMPLE = BITWIDTH / 8;
 const INT16_MAX_MAGNITUDE = 2 ** 15; // 32768
 const PROCESSING_INTERVAL_MS = 50;
 
-interface HeadConfig {
+export interface HeadConfig {
   microphoneId: string; // e.g. "hw:1,0"
   rmsSmoothing: number; // [0, 1] higher = smoother, but more lag; 0 = no smoothing, more jitter
   speechProbThreshold: number; // [0, 1] threshold for speech detection
