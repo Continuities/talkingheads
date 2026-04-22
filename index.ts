@@ -33,7 +33,10 @@ const serial = process.env.SERIAL_PATH
 
 const headConfigs: HeadConfig[] = [];
 if (process.env.MICROPHONE_1_ID) {
-  const mic1 = MicrophoneBuffer(process.env.MICROPHONE_1_ID);
+  const mic1 = await MicrophoneBuffer({
+    microphoneId: process.env.MICROPHONE_1_ID,
+    speechProbThreshold: SPEECH_PROB_THRESHOLD,
+  });
   const solenoid = Solenoid({
     minTriggerDelayMs: MIN_ONSET_GAP_MS,
     maxOpenDurationMs: MAX_SOLENOID_OPEN_DURATION_MS,
