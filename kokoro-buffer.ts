@@ -25,6 +25,17 @@ export default async function KokoroBuffer(inputFile: string) {
     sampleRate: SAMPLE_RATE,
   });
 
+  let speakerReady = false;
+  const pending: Float32Array[] = [];
+  speaker.on("open", () => {
+    speakerReady = true;
+    for (const chunk of pending) {
+      for (const sample of chunk) {
+        outputBuffer.add(sample);
+      }
+    }
+  });
+
   const text = await readFile(inputFile, "utf-8");
 
   const stanzas = text
@@ -33,14 +44,18 @@ export default async function KokoroBuffer(inputFile: string) {
     .filter(Boolean);
 
   const worker = new Worker("./kokoro-worker.ts", {
-    workerData: stanzas.slice(0, 1),
+    workerData: stanzas,
   });
 
   worker.on("message", (audio: ArrayBuffer) => {
-    speaker.write(float32ToInt16Buffer(new Float32Array(audio)));
     const samples = new Float32Array(audio);
-    for (const sample of samples) {
-      outputBuffer.add(sample);
+    speaker.write(float32ToInt16Buffer(samples));
+    if (speakerReady) {
+      for (const sample of samples) {
+        outputBuffer.add(sample);
+      }
+    } else {
+      pending.push(samples);
     }
   });
 
