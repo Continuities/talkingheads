@@ -5,6 +5,7 @@ import RingBufferTS from "ring-buffer-ts";
 
 const SAMPLE_RATE = 24000;
 const CHANNELS = 1;
+const BUFFER_SIZE = SAMPLE_RATE * 60 * 5; // in samples, not bytes, enough for 5 minutes of audio
 
 function float32ToInt16Buffer(float32Array: Float32Array) {
   const int16 = new Int16Array(float32Array.length);
@@ -15,9 +16,15 @@ function float32ToInt16Buffer(float32Array: Float32Array) {
   return Buffer.from(int16.buffer);
 }
 
-export default async function KokoroBuffer(inputFile: string) {
-  const outputBuffer: RingBufferTS.RingBuffer<number> =
-    new RingBufferTS.RingBuffer(SAMPLE_RATE * 30); // 30 seconds buffer
+export default async function KokoroBuffer(
+  inputFile: string,
+  numSpeakers = 1,
+): Promise<RingBufferTS.RingBuffer<number>[]> {
+  let currentSpeaker = 0;
+  const outputBuffers = Array.from(
+    { length: numSpeakers },
+    () => new RingBufferTS.RingBuffer<number>(BUFFER_SIZE),
+  );
 
   const speaker = new Speaker({
     channels: CHANNELS,
@@ -31,7 +38,9 @@ export default async function KokoroBuffer(inputFile: string) {
     speakerReady = true;
     for (const chunk of pending) {
       for (const sample of chunk) {
-        outputBuffer.add(sample);
+        for (let i = 0; i < numSpeakers; i++) {
+          outputBuffers[i].add(i === currentSpeaker ? sample : 0);
+        }
       }
     }
   });
@@ -44,7 +53,10 @@ export default async function KokoroBuffer(inputFile: string) {
     .filter(Boolean);
 
   const worker = new Worker("./kokoro-worker.ts", {
-    workerData: stanzas,
+    workerData: {
+      stanzas,
+      numSpeakers,
+    },
   });
 
   worker.on("message", (audio: ArrayBuffer) => {
@@ -52,11 +64,14 @@ export default async function KokoroBuffer(inputFile: string) {
     speaker.write(float32ToInt16Buffer(samples));
     if (speakerReady) {
       for (const sample of samples) {
-        outputBuffer.add(sample);
+        for (let i = 0; i < numSpeakers; i++) {
+          outputBuffers[i].add(i === currentSpeaker ? sample : 0);
+        }
       }
     } else {
       pending.push(samples);
     }
+    currentSpeaker = (currentSpeaker + 1) % numSpeakers;
   });
 
   worker.on("error", (err) => {
@@ -67,5 +82,5 @@ export default async function KokoroBuffer(inputFile: string) {
     speaker.end();
   });
 
-  return outputBuffer;
+  return outputBuffers;
 }

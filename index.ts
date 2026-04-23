@@ -54,18 +54,33 @@ if (process.env.MICROPHONE_1_ID) {
   });
 }
 if (process.env.TEXT_INPUT_FILE) {
-  const kokoroBuffer = await KokoroBuffer(process.env.TEXT_INPUT_FILE);
-  const solenoid = Solenoid({
+  const [buffer1, buffer2] = await KokoroBuffer(process.env.TEXT_INPUT_FILE, 2);
+  const solenoid1 = Solenoid({
     minTriggerDelayMs: MIN_ONSET_GAP_MS,
     maxOpenDurationMs: MAX_SOLENOID_OPEN_DURATION_MS,
     onChange: (open) => {
       serial?.sendSerial(`1:${open ? "1" : "0"}`);
     },
   });
+  const solenoid2 = Solenoid({
+    minTriggerDelayMs: MIN_ONSET_GAP_MS,
+    maxOpenDurationMs: MAX_SOLENOID_OPEN_DURATION_MS,
+    onChange: (open) => {
+      serial?.sendSerial(`2:${open ? "1" : "0"}`);
+    },
+  });
   headConfigs.push({
-    audioBuffer: kokoroBuffer,
+    audioBuffer: buffer1,
     bitrate: 24000,
-    solenoid,
+    solenoid: solenoid1,
+    rmsSmoothing: RMS_SMOOTHING,
+    onsetThreshold: parseFloat(process.env.ONSET_THRESHOLD),
+    fluxScale: parseFloat(process.env.FLUX_SCALE),
+  });
+  headConfigs.push({
+    audioBuffer: buffer2,
+    bitrate: 24000,
+    solenoid: solenoid2,
     rmsSmoothing: RMS_SMOOTHING,
     onsetThreshold: parseFloat(process.env.ONSET_THRESHOLD),
     fluxScale: parseFloat(process.env.FLUX_SCALE),
