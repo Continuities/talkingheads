@@ -17,7 +17,7 @@ function float32ToInt16Buffer(float32Array: Float32Array) {
 
 export default async function KokoroBuffer(inputFile: string) {
   const outputBuffer: RingBufferTS.RingBuffer<number> =
-    new RingBufferTS.RingBuffer(SAMPLE_RATE * 10); // 10 seconds buffer
+    new RingBufferTS.RingBuffer(SAMPLE_RATE * 30); // 30 seconds buffer
 
   const speaker = new Speaker({
     channels: CHANNELS,

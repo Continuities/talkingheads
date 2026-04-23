@@ -2,7 +2,7 @@ import RingBufferTS from "ring-buffer-ts";
 import { smoothed } from "./util.ts";
 import Solenoid from "./solenoid.ts";
 
-const WINDOW_SIZE = 512;
+const REFRESH_RATE = 30;
 
 export interface HeadInfo {
   rms: number;
@@ -34,7 +34,8 @@ export default async function Head({
     flux: 0,
     solenoidOpen: false,
   };
-  const processInterval = Math.round((WINDOW_SIZE / bitrate) * 1000);
+  const processInterval = 1000 / REFRESH_RATE;
+  const WINDOW_SIZE = bitrate / REFRESH_RATE;
   const smoothedRMS = smoothed(rmsSmoothing, 0);
   (async function processAudio() {
     setTimeout(processAudio, processInterval);
