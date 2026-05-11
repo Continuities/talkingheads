@@ -5,6 +5,8 @@
 #define NUM_LEDS 1
 #define SERIAL_BUFFER_SIZE 4 // messages are "d:d"
 #define END_MARKER '\n'
+#define RELAY_1_PIN 5
+#define RELAY_2_PIN 6
 
 Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 char serial_buffer[SERIAL_BUFFER_SIZE];
@@ -20,14 +22,16 @@ bool handleMessage(const char *msg)
 
   int id = atoi(msg);
   int value = atoi(colon + 1);
-
+  int relayPin = id == 1 ? RELAY_1_PIN : RELAY_2_PIN;
   if (value == 1)
   {
     strip.setPixelColor(0, strip.Color(255, 0, 0));
+    digitalWrite(relayPin, HIGH);
   }
   else
   {
     strip.clear();
+    digitalWrite(relayPin, LOW);
   }
   strip.show();
 
@@ -37,6 +41,10 @@ bool handleMessage(const char *msg)
 void setup()
 {
   Serial.begin(9600);
+  pinMode(RELAY_1_PIN, OUTPUT);
+  pinMode(RELAY_2_PIN, OUTPUT);
+  digitalWrite(RELAY_1_PIN, LOW);
+  digitalWrite(RELAY_2_PIN, LOW);
   strip.begin();
   strip.show();
 }
